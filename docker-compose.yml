@@ -1,0 +1,50 @@
+# version: '3.8'
+
+services:
+  # 🐬 MySQL Database
+  ecommerce-db:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root   # ✅ Set MySQL root password
+      MYSQL_DATABASE: ecommerce   # ✅ Change this to your actual DB name
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # 🔴 Redis
+  ecommerce-redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # 📧 Mailpit (for testing emails)
+  ecommerce-mailpit:
+    image: axllent/mailpit
+    restart: always
+    ports:
+      - "8025:8025"
+
+  # 🐘 Laravel App (PHP + FPM)
+  ecommerce-app:
+    build: .
+    restart: always
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    depends_on:
+      - ecommerce-db
+      - ecommerce-redis
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: mysql
+      DB_HOST: ecommerce-db
+      DB_PORT: 3306
+      DB_DATABASE: ecommerce
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
+volumes:
+  db_data:

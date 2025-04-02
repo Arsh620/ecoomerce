@@ -5,30 +5,50 @@ namespace App\Http\Controllers;
 use App\Repositories\Product\IProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Info(
+ *     title="Ecommerce API",
+ *     version="1.0.0",
+ *     description="API documentation for the ecommerce application.",
+ *     @OA\Contact(
+ *         email="support@example.com"
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="Product",
+ *     type="object",
+ *     required={"id", "name", "price", "description"},
+ *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="name", type="string", example="Smartphone"),
+ *     @OA\Property(property="price", type="number", format="float", example=299.99),
+ *     @OA\Property(property="description", type="string", example="A high-end smartphone"),
+ *     @OA\Property(property="created_at", type="string", format="date-time", example="2024-07-01T12:34:56Z"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", example="2024-07-01T12:34:56Z")
+ * )
+ */
 class ProductController extends Controller
 {
     private $productRepository;
 
-    /**
-     * Author :Arshad Hussain
-     * Date : 2025-04-02
-     * Description : This class implements the IProduct interface and provides methods to interact with the Product model.
-     * It includes methods for retrieving all products, getting a product by ID, creating a new product, updating an existing product, and soft deleting a product by updating its status.
-     * The methods utilize Eloquent ORM for database operations and return appropriate responses.
-     */
-
-    /**
-     * Constructor to inject the product repository interface.
-     */
     public function __construct(IProduct $productRepository)
     {
         $this->productRepository = $productRepository;
     }
 
     /**
-     * Get all products.
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/get-all-products",
+     *     summary="Retrieve all products",
+     *     tags={"Products"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful response",
+     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Product"))
+     *     )
+     * )
      */
     public function index()
     {
@@ -41,18 +61,26 @@ class ProductController extends Controller
     }
 
     /**
-     * Get a product by ID.
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/get-product-by-id",
+     *     summary="Retrieve a product by ID",
+     *     tags={"Products"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="query",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Successful response"),
+     *     @OA\Response(response=422, description="Validation failed"),
+     * )
      */
     public function getById(Request $request)
     {
-        // Validation rules
         $validator = Validator::make($request->all(), [
             'id' => 'required|integer',
         ]);
 
-        // If validation fails, return error response
         if ($validator->fails()) {
             return response()->json([
                 'status'  => false,
@@ -61,7 +89,6 @@ class ProductController extends Controller
             ], 422);
         }
 
-        // Fetch product by ID
         $product = $this->productRepository->getById($request->id);
 
         return response()->json([
@@ -72,20 +99,31 @@ class ProductController extends Controller
     }
 
     /**
-     * Store a new product.
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/create-products",
+     *     summary="Create a new product",
+     *     tags={"Products"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name", "price", "description"},
+     *             @OA\Property(property="name", type="string", example="Smartphone"),
+     *             @OA\Property(property="price", type="number", format="float", example=299.99),
+     *             @OA\Property(property="description", type="string", example="A high-end smartphone")
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Product created successfully"),
+     *     @OA\Response(response=422, description="Validation failed")
+     * )
      */
     public function store(Request $request)
     {
-        // Validation rules
         $validator = Validator::make($request->all(), [
             'name'        => 'required|string',
             'price'       => 'required|numeric',
             'description' => 'required|string',
         ]);
 
-        // If validation fails, return error response
         if ($validator->fails()) {
             return response()->json([
                 'status'  => false,
@@ -94,7 +132,6 @@ class ProductController extends Controller
             ], 422);
         }
 
-        // Create new product
         $product = $this->productRepository->create($request);
 
         return response()->json([
@@ -105,22 +142,33 @@ class ProductController extends Controller
     }
 
     /**
-     * Update an existing product.
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Put(
+     *     path="/api/update-product-by-id",
+     *     summary="Update a product",
+     *     tags={"Products"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"id"},
+     *             @OA\Property(property="id", type="integer", example=1),
+     *             @OA\Property(property="name", type="string", example="Smartphone Pro"),
+     *             @OA\Property(property="price", type="number", format="float", example=399.99),
+     *             @OA\Property(property="description", type="string", example="An upgraded smartphone")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Product updated successfully"),
+     *     @OA\Response(response=422, description="Validation failed")
+     * )
      */
     public function update(Request $request)
     {
-        // Validation rules
         $validator = Validator::make($request->all(), [
             'id'          => 'required|integer',
             'name'        => 'nullable|string',
             'price'       => 'nullable|numeric',
             'description' => 'nullable|string',
-            'stock'       => 'nullable|integer',
         ]);
 
-        // If validation fails, return error response
         if ($validator->fails()) {
             return response()->json([
                 'status'  => false,
@@ -129,7 +177,6 @@ class ProductController extends Controller
             ], 422);
         }
 
-        // Update product details
         $product = $this->productRepository->update($request);
 
         return response()->json([
@@ -140,18 +187,27 @@ class ProductController extends Controller
     }
 
     /**
-     * Soft delete a product (update status).
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/delete-product-by-id",
+     *     summary="Soft delete a product",
+     *     tags={"Products"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"id"},
+     *             @OA\Property(property="id", type="integer", example=1)
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Product deleted successfully"),
+     *     @OA\Response(response=422, description="Validation failed")
+     * )
      */
     public function destroy(Request $request)
     {
-        // Validation rules
         $validator = Validator::make($request->all(), [
             'id' => 'required|integer'
         ]);
 
-        // If validation fails, return error response
         if ($validator->fails()) {
             return response()->json([
                 'status'  => false,
@@ -160,7 +216,6 @@ class ProductController extends Controller
             ], 422);
         }
 
-        // Soft delete product by updating status
         $this->productRepository->updateStatusById($request->id);
 
         return response()->json([
